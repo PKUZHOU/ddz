@@ -89,12 +89,12 @@ def get_sidaier(poker):
 
     for key in keys:
         for i in poker.keys():
-            for j in poker.keys()[poker.keys().index(i):]:
+            for j in list(poker.keys())[list(poker.keys()).index(i):]:
                 if i!=j and i!=key and j!=key: #带的两只不能一样
                     sidaier.append([key,key,key,key,i,j])#四个带两只
     for key in keys:
         for i in poker.keys():
-            for j in poker.keys()[poker.keys().index(i):]:
+            for j in list(poker.keys())[list(poker.keys()).index(i):]:
                 if poker[i] >=2 and poker[j]>=2:
                     if i!=key and j!=key and i!=j:
                         sidaier.append([key,key,key,key,i,i,j,j])#四个带两对
@@ -173,9 +173,21 @@ def get_hangtianfeiji(poker):
                         hangtianfeiji.append(temp+list_dayi)#飞机带大翼
     return hangtianfeiji
 
+def get_zhadan(poker):
+    zhadan = []
+    keys = []
+    for key in poker.keys():
+        if poker[key]>=4:
+            keys.append(key)
+    for key in keys:
+        zhadan.append([key,key,key,key])
+
+    return zhadan
 
 
-
+def get_huojian(poker):
+    if 16 in poker.keys() and 17 in poker.keys():
+        return [16,17]
 def partition(poker,if_ordinary):
     
     if (not if_ordinary):
@@ -189,23 +201,27 @@ def partition(poker,if_ordinary):
     sidaier = get_sidaier(poker_counts)
     feiji =  get_feiji(poker_counts)
     hangtianfeiji = get_hangtianfeiji(poker_counts)
-    print ("poker",poker)
-    print ("danzhang",danzhang)
-    print ("yidui",yidui)
-    print ("danshun",danshun)
-    print ("shuangshun",shuangshun)
-    print ("sandai",sandai)
-    print ("sidaier",sidaier)
-    print ("feiji",feiji)
-    print ("hangtianfeiji",hangtianfeiji)
+    zhadan = get_zhadan(poker_counts)
+    huojian = get_huojian(poker_counts)
+    print ("poker",   len(poker))
+    print ("danzhang",  len(danzhang))
+    print ("yidui",     len(yidui))
+    print ("danshun",   len(danshun))
+    print ("shuangshun",len(shuangshun))
+    print ("sandai",    len(sandai))
+    print ("sidaier",   len(sidaier))
+    print ("feiji",     len(feiji))
+    print ("hangtianfeiji",len(hangtianfeiji))
+    print ("zhadan",len(zhadan))
+    print ("huojian",len(huojian))
     return poker
 
 
 if __name__ == '__main__':
-    poker = [3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,1,2,7,8]
+    poker = range(54)
     #poker = range(20)
     time1 = time.time()
-    new = partition(poker,True)
+    new = partition(poker,False)
     time1 = time.time()-time1
     print(time1)
 
