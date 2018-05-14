@@ -176,9 +176,11 @@ def get_hangtianfeiji(poker):
 
 
 
-def partition(poker):
-    new_poker = sorted(ordinalTransfer(poker))
-    poker_counts = Counter(new_poker)
+def partition(poker,if_ordinary):
+    
+    if (not if_ordinary):
+        poker = sorted(ordinalTransfer(poker))
+    poker_counts = Counter(poker)
     danzhang = get_danzhang(poker_counts)
     yidui = get_yidui(poker_counts)
     danshun = get_danshun(poker_counts)
@@ -187,7 +189,7 @@ def partition(poker):
     sidaier = get_sidaier(poker_counts)
     feiji =  get_feiji(poker_counts)
     hangtianfeiji = get_hangtianfeiji(poker_counts)
-    print (new_poker)
+    print ("poker",poker)
     print ("danzhang",danzhang)
     print ("yidui",yidui)
     print ("danshun",danshun)
@@ -196,14 +198,14 @@ def partition(poker):
     print ("sidaier",sidaier)
     print ("feiji",feiji)
     print ("hangtianfeiji",hangtianfeiji)
-    return new_poker
+    return poker
 
 
 if __name__ == '__main__':
-    poker = random.sample(range(54),17)
+    poker = [3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,1,2,7,8]
     #poker = range(20)
     time1 = time.time()
-    new = partition(poker)
+    new = partition(poker,True)
     time1 = time.time()-time1
     print(time1)
 
