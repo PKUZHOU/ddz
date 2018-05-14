@@ -188,6 +188,8 @@ def get_zhadan(poker):
 def get_huojian(poker):
     if 16 in poker.keys() and 17 in poker.keys():
         return [16,17]
+    else:
+        return []
 def partition(poker,if_ordinary):
     
     if (not if_ordinary):
