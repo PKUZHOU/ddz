@@ -13,9 +13,7 @@ def ordinalTransfer(poker):
     if 53 in poker:
         newPoker += [17]
     return newPoker
-
 #以下的分析函数输入都是字典，key为牌面大小，value 为该大小的牌数。
-
 def get_danzhang(poker):
     # 获得可以打的单张
     return [[i] for i in poker.keys()]
@@ -216,14 +214,22 @@ def partition(poker,if_ordinary):
     print ("hangtianfeiji",len(hangtianfeiji))
     print ("zhadan",len(zhadan))
     print ("huojian",len(huojian))
-    return poker
+    total = (danzhang+yidui+danshun+shuangshun+sandai+sidaier+feiji+hangtianfeiji+zhadan+huojian)
 
+    return total
+def to_str(poker_list):
+    s = []
+    for poker in poker_list:
+        s.append(str(poker))
+    return s
 
 if __name__ == '__main__':
     poker = range(54)
     #poker = range(20)
     time1 = time.time()
     new = partition(poker,False)
+    dictionary = dict(zip(to_str(new),range(len(new))))
+   #print(dictionary)
     time1 = time.time()-time1
     print(time1)
 

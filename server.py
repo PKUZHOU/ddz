@@ -1,30 +1,45 @@
-#coding=utf-8
+# coding=utf-8
 import json
 import random
-
 from bot import get_bot_response
+
+
 class Server:
     def __init__(self):
         pass
+
     def allocator(self):
+        # 随机发牌，返回 明牌，地主，农民甲，农民乙的牌 0～53编码
         total_num = 54
-        publiccard_num = 3
-        farmercard_num = 17
+        publiccard_num = 3  # 明牌数
+        farmercard_num = 17  # 农民牌数
         all_cards = set(range(total_num))
-        publiccards = set(random.sample(all_cards,publiccard_num))
+        publiccards = set(random.sample(all_cards, publiccard_num))
         all_cards = all_cards - publiccards
-        farmer_0_cards = set(random.sample(all_cards,farmercard_num))
+        farmer_0_cards = set(random.sample(all_cards, farmercard_num))
         all_cards = all_cards - farmer_0_cards
-        farmer_1_cards = set(random.sample(all_cards,farmercard_num))
-        loard_cards = all_cards-farmer_1_cards
+        farmer_1_cards = set(random.sample(all_cards, farmercard_num))
+        loard_cards = all_cards - farmer_1_cards
         loard_cards = loard_cards | publiccards
-        return [list(publiccards),list(loard_cards),list(farmer_0_cards),list(farmer_1_cards)]
-    def ordinalTransfer(self,poker):
+        return [list(publiccards), list(loard_cards), list(farmer_0_cards), list(farmer_1_cards)]
+
+    def ordinalTransfer(self, poker):
+        # 0～53编码转 牌面可重复编码，忽略花色
         newPoker = [int(i / 4) + 3 for i in poker if i <= 52]
         if 53 in poker:
             newPoker += [17]
         return newPoker
-    def checkPokerType(self,poker, hasTransfer):  # poker：list，表示一个人出牌的牌型
+    def readableTransfer(self,poker):
+        # 0～53编码转 J Q K A
+        poker = self.ordinalTransfer(poker)
+        dict_poker = {3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A',15:'2',16:'joker',17:'JOKER'}
+        newPoker = [dict_poker[i] for i in poker]
+        return newPoker
+
+    def checkPokerType(self, poker, hasTransfer):  # poker：list，表示一个人出牌的牌型
+
+        # 从sample里面粘贴的哦，检查牌型，返回的是牌型和该出牌的权重
+
         poker.sort()
         lenPoker = len(poker)
         newPoker = [i for i in poker]
@@ -163,136 +178,158 @@ class Server:
                             mP, sP = m, s
                             break
         weight = 0
-        if(typeP == "单张"):
+        if (typeP == "单张"):
             weight = 1
-        elif(typeP == "一对"):
+        elif (typeP == "一对"):
             weight = 2
-        elif( "三带" in typeP):
+        elif ("三带" in typeP):
             weight = 4
-        elif(typeP == "单顺"):
+        elif (typeP == "单顺"):
             weight = 6
-        elif(typeP == "双顺"):
+        elif (typeP == "双顺"):
             weight = 6
-        elif(typeP in["飞机不带翼" , "飞机带大翼" ,"飞机带小翼"]):
+        elif (typeP in ["飞机不带翼", "飞机带大翼", "飞机带小翼"]):
             weight = 8
-        elif(typeP == "四带二"):
+        elif (typeP == "四带二"):
             weight = 8
-        elif(typeP == "炸弹"):
+        elif (typeP == "炸弹"):
             weight = 10
-        elif("航天飞机" in typeP):
+        elif ("航天飞机" in typeP):
             weight = 10
-        elif(typeP == "火箭"):
+        elif (typeP == "火箭"):
             weight = 16
+        return typeP, weight
 
-        return typeP,weight
-    def add_request(self,info,request):
+    def add_request(self, info, request):
+        # 向json数组里面加request信息
         info["requests"].append(request)
-    def get_putted_card_num(self,res):
+
+    def get_putted_card_num(self, res):
+        # 统计已出牌数
         num = 0
         for cards in res:
-            num+=len(cards)
+            num += len(cards)
         return num
-    def check_end(self,info_farmer0,info_farmer1,info_loard):
+
+    def check_end(self, info_farmer0, info_farmer1, info_loard):
+        # 检查是否对局结束 地主赢返回0,农民赢返回1,否则返回2
         if (self.get_putted_card_num(info_farmer0['responses']) == 17):
-            print("winner: farmer")
+            print("winner: 农民")
             return 1
         if (self.get_putted_card_num(info_farmer1['responses']) == 17):
-            print("winner: farmer")
+            print("winner: 农民")
             return 1
         if (self.get_putted_card_num(info_loard['responses']) == 20):
-            print("winner: loard")
+            print("winner: 地主")
             return 0
         return 2
+
+    def check_Error(self, Type):
+        if (Type == '错误'):
+            print("ERROR!")
+            exit(-1)
+
     def run(self):
-        info_farmer0 = {"requests":[],"responses":[]}
-        info_farmer1 = {"requests":[],"responses":[]}
-        info_loard   = {"requests":[],"responses":[]}
+        round = 0
+        info_farmer0 = {"requests": [], "responses": []}
+        info_farmer1 = {"requests": [], "responses": []}
+        info_loard = {"requests": [], "responses": []}
 
         weight_loard = 0
         weight_farmer0 = 0
         weight_farmer1 = 0
 
-        #allocate cards
-        publiccards,loard_cards,farmer0_cards,farmer1_cards = self.allocator()
+        # 发牌
+        publiccards, loard_cards, farmer0_cards, farmer1_cards = self.allocator()
 
-        #first round
-        info_loard["requests"].append({"history":[[],[]],"publiccard":publiccards,'own':loard_cards})
+        # 第一轮
+
+        #展示发牌结果-----------------------------------------------------#
+        print("地主牌",self.readableTransfer(loard_cards))
+        print("农民甲牌",self.readableTransfer(farmer0_cards))
+        print("农民乙牌",self.readableTransfer(farmer1_cards))
+
+        print("Round ",round)
+        round+=1
+
+        # 地主出牌-------------------------------------------------------#
+        info_loard["requests"].append(
+            {"history": [[], []], "publiccard": publiccards, 'own': loard_cards})
+
         loard_response = get_bot_response(info_loard)
         info_loard["responses"].append(loard_response["response"])
-        Type,w_l = self.checkPokerType(loard_response["response"], False)
-        weight_loard+=w_l
-        print('loard ', Type)
-        if (Type == '错误'):
-            print("ERROR!")
-            exit(-1)
+        Type, w_l = self.checkPokerType(loard_response["response"], False)
+        weight_loard += w_l
+        print('地主 ', Type, self.readableTransfer(loard_response["response"]))
+        self.check_Error(Type)
 
-        info_farmer0['requests'].append({"history":[[],loard_response["response"]],"publiccard":publiccards,'own':farmer0_cards})
+        # 农民甲出牌-----------------------------------------------------#
+        info_farmer0['requests'].append(
+            {"history": [[], loard_response["response"]], "publiccard": publiccards, 'own': farmer0_cards})
         farmer0_response = get_bot_response(info_farmer0)
         info_farmer0['responses'].append(farmer0_response["response"])
-        Type,w_f0 = self.checkPokerType(farmer0_response["response"], False)
-        weight_farmer0+=w_f0
-        print('farmer0 ', Type)
-        if (Type == '错误'):
-            print("ERROR!")
-            exit(-1)
+        Type, w_f0 = self.checkPokerType(farmer0_response["response"], False)
+        weight_farmer0 += w_f0
+        print('农民 ', Type,self.readableTransfer(farmer0_response["response"]))
+        self.check_Error(Type)
 
-        info_farmer1['requests'].append({"history":[loard_response["response"],farmer0_response['response']],"publiccard":publiccards,'own':farmer1_cards})
+        # 农民乙出牌-----------------------------------------------------#
+        info_farmer1['requests'].append(
+            {"history": [loard_response["response"], farmer0_response['response']], "publiccard": publiccards,
+             'own': farmer1_cards})
         farmer1_response = get_bot_response(info_farmer1)
         info_farmer1['responses'].append(farmer1_response['response'])
-        Type,wf1 = self.checkPokerType(farmer1_response["response"], False)
-        weight_farmer1+=wf1
-        print('farmer1', Type)
-        if (Type == '错误'):
-            print("ERROR!")
-            exit(-1)
-        #start loop
+        Type, w_f1 = self.checkPokerType(farmer1_response["response"], False)
+        weight_farmer1 += w_f1
+        print('农民 ', Type, self.readableTransfer(farmer1_response["response"]))
+        self.check_Error(Type)
 
-        while(True):
-            #loard
-            info_loard["requests"].append({"history": [farmer0_response['response'], farmer1_response['response']]})
+
+        while (True):
+            # 地主出牌
+            print("Round ", round)
+            round+=1
+            info_loard["requests"].append(
+                {"history": [farmer0_response['response'], farmer1_response['response']]})
             loard_response = get_bot_response(info_loard)
-            Type,w_l = self.checkPokerType(loard_response["response"],False)
-            weight_loard+=w_l
-            print('loard ',Type)
-            if(Type == '错误'):
-                print("ERROR!")
-                exit(-1)
+            Type, w_l = self.checkPokerType(loard_response["response"], False)
+            weight_loard += w_l
+            print('地主 ', Type, self.readableTransfer(loard_response["response"]))
+            self.check_Error(Type)
             info_loard["responses"].append(loard_response["response"])
-            if(self.check_end(info_farmer0,info_farmer1,info_loard)!=2):
+            #检测是否对局结束
+            if (self.check_end(info_farmer0, info_farmer1, info_loard) != 2):
                 break
 
-            #farmer-0
+            # 农民甲出牌
             info_farmer0['requests'].append(
                 {"history": [farmer1_response['response'], loard_response["response"]]})
             farmer0_response = get_bot_response(info_farmer0)
-            Type,w_f0 = self.checkPokerType(farmer0_response["response"], False)
-            weight_farmer0+=w_f0
-            print('farmer0 ',Type)
-            if (Type == '错误'):
-                print("ERROR!")
-                exit(-1)
+            Type, w_f0 = self.checkPokerType(farmer0_response["response"], False)
+            weight_farmer0 += w_f0
+            print('农民 ', Type, self.readableTransfer(farmer0_response["response"]))
+            self.check_Error(Type)
+
             info_farmer0['responses'].append(farmer0_response["response"])
             if (self.check_end(info_farmer0, info_farmer1, info_loard) != 2):
                 break
 
-            #farmer-1
+            # 农民乙出牌
             info_farmer1['requests'].append(
                 {"history": [loard_response["response"], farmer0_response['response']]})
             farmer1_response = get_bot_response(info_farmer1)
-            Type,wf1 = self.checkPokerType(farmer1_response["response"], False)
-            weight_farmer1+=wf1
-            print('farmer1',Type)
-            if (Type == '错误'):
-                print("ERROR!")
-                exit(-1)
+            Type, w_f1 = self.checkPokerType(farmer1_response["response"], False)
+            weight_farmer1 += w_f1
+            print('农民 ', Type, self.readableTransfer(farmer1_response["response"]))
+            self.check_Error(Type)
+
             info_farmer1['responses'].append(farmer1_response['response'])
-            if(self.check_end(info_farmer0,info_farmer1,info_loard)!=2):
+            if (self.check_end(info_farmer0, info_farmer1, info_loard) != 2):
                 break
 
-        print('score loard: ',weight_loard,'score farmer0:',weight_farmer0,'score farmer1:',weight_farmer1)
+        print('score loard: ', weight_loard, 'score farmer0:', weight_farmer0, 'score farmer1:', weight_farmer1)
+
 
 if __name__ == '__main__':
     server = Server()
-    # while True:
     server.run()
-
